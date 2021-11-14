@@ -1,0 +1,140 @@
+body{
+    --secondary-color: rgb(231, 231, 231);
+}
+
+body{
+    margin: 0;
+    background-color: var(--secondary-color);
+}
+
+.root{
+    width: 100%;
+    height: 100%;
+}
+
+.app{
+    width: 240px;
+    height: 100%;
+    /* min-height: 240px; */
+}
+.app .section.title{
+    text-align: center;
+}
+
+.floating-app-container{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.floating-app{
+    text-align: center;
+}
+
+
+.content{
+    
+}
+.header{
+    
+}
+
+
+.section{
+    text-align: center;
+    background-color: #fff;
+    padding: 1em;
+    text-align: left;
+    margin-bottom: 10px;
+}
+.section.save-status{
+    text-align: center;
+}
+.section.save-status{    
+    background-color: rgb(255, 255, 255);
+}
+.folding{
+    transition: max-height 0.1s;
+    transition-timing-function: ease;
+    overflow-y: hidden;
+}
+.no-height{
+    height: 0;
+}
+.section .title{
+    font-weight: 700;
+    font-size: 1.1em;
+    margin-bottom: 0;
+}
+.section .label{
+    text-align: left;
+    opacity: 0.7;
+    font-size: 1.0em;
+}
+.field-row {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    align-items: center;
+}
+.field-row .input{
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+}
+.field-row .show-pass-button{
+    width: 12px;
+    height: 12px;
+    background-color: rgb(73, 73, 73);
+    border-radius: 3px;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin-left: -20px;
+    transition: all 0.1s;
+    transition-timing-function: ease;
+}
+.field-row .show-pass-button:active{
+    width: 8px;
+    height: 8px;
+    margin-left: -18px;
+}
+.field-row .show-pass-button.active{
+    background-color: transparent;
+    border: 3px rgb(73, 73, 73) solid;
+}
+
+h1, h2, h3{
+    margin: 0;
+}
+.title{
+    margin-bottom: 10px;
+}
+
+a{
+    text-decoration: none;
+    color: rgb(255, 67, 67);
+    font-weight: 500;
+}
+
+input, textarea{
+    width: 100%;
+    border: 0;
+    padding: 0.6em;
+    outline: none;
+    background-color: rgb(243 243 243);
+}
+
+button{
+    border: 0;
+    background-color: #fff;
+    padding: 0.6em;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgb(0 0 0 / 10%);
+    transition: scale box-shadow background-color 0.1s;
+    transition-timing-function: ease;
+}
+button:active{
+    scale: 0.9;
+    background-color: rgb(248, 248, 248);
+    box-shadow: 0 0 6px rgb(0 0 0 / 0%);
+}

@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "Webinar People Scanner",
+    "version": "0.40",
+    "action": {
+        "default_popup": "src/popup/popup.html"
+    },
+    "options_page": "src/options/options.html",
+    "permissions": [
+        "runtime", "app", "storage", "webNavigation", "scripting", "tabs"
+    ],
+    "host_permissions": [
+        "https://events.webinar.ru/"
+    ],
+    "background": {
+        "service_worker": "src/background.js"
+    },
+    "externally_connectable": {
+        "matches": [
+          "https://events.webinar.ru/*"
+        ]
+    }
+    
+}
