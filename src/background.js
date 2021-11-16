@@ -10,7 +10,7 @@ class BGRemoteApi extends RemoteApi{
 
     async setup(){
         var config = await readConfigFromStorage();
-        this.api_server = config.api_server
+        this.apiServer = config.api_server
         this.auth(config.token)
         this.setupListeners()
     }

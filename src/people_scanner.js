@@ -148,7 +148,7 @@ class PeopleScannerControls{
     }
 
     emptyOrText(text){
-        if(text.trim().length==0) return '<div style="opacity: 0.5;">-пусто-</div>'
+        if(text.trim().length==0) return '<div style="opacity: 0.3;">-пусто-</div>'
         else return text
     }
 
@@ -171,8 +171,8 @@ class PeopleScannerControls{
     }
 
     renderNotifyButton(){
-        if(this.scanner.api.lastScanId){
-            return `<button style="${this.renderButtonStyles()}" onclick='${this.instancePath}.notifyUsers();'>Уведомление</button>`
+        if(this.scanner.api.lastScanId && this.scanner.prevScanResult.absentList.length>0){
+            return `<button class="wps-button" style="${this.renderButtonStyles()} font-size: 0.9em;" onclick='${this.instancePath}.notifyUsers();'>Уведомить отсутствующих</button>`
         }else{
             return ''
         }
@@ -203,17 +203,69 @@ class PeopleScannerControls{
         }
     }
 
-    renderHTML(){
-        //TODO:
-        // really bad rendering
-        // styling should be injected
-        var html =  `<h3>Счетчик присутствующих / отсутствующих</h3>
-            <button style="${this.renderButtonStyles()}" onclick='${this.instancePath}.scanPeople();'>Сканировать</button>
+    getOptionsLink(text){
+        // chrome only, need to port extension on other browsers sometime
+        var url = `chrome-extension://${globalAppId}/src/options/options.html`
+        return `<a href="${url}" target="_blank">${text}</a>`
+    }
+
+    renderNoTokenError(){
+        return `
+            <div>Не указан токен доступа к данным. Пожалуйста, перейдите в ${this.getOptionsLink("настройки")} и заполните необходимые поля.</div>
+        `
+    }
+    renderInvalidTokenError(){
+        return `
+            <div>Имеющийся токен не действителен. Чтобы решить эту проблему, вы можете сгенерировать новый токен по ссылке в ${this.getOptionsLink("настройках")} и ввести новый токен.</div>
+        `
+    }
+    renderInterface(){
+        return `
+            <button class="wps-button" style="${this.renderButtonStyles()}" onclick='${this.instancePath}.scanPeople();'>Сканировать</button>
             ${this.renderNotifyButton()}
             <br/><br/>
                 ${this.renderLists()}
             <br/>
-            `
+        `
+    }
+
+    renderStyes(){
+        return `
+        <style>
+        button.wps-button{
+            border: 0;
+            background-color: #fff;
+            padding: 0.6em;
+            cursor: pointer;
+            box-shadow: 0 0 6px rgb(0 0 0 / 10%);
+            transition: scale box-shadow background-color 0.1s;
+            transition-timing-function: ease;
+        }
+        button.wps-button:active{
+            opacity: 0.5;
+            scale: 0.9;
+            background-color: rgb(248, 248, 248);
+            box-shadow: 0 0 6px rgb(0 0 0 / 0%);
+        }
+        </style>
+        `
+    }
+
+    renderHTML(){
+        //TODO:
+        // really bad rendering
+        // styling should be injected
+        var html =  `${this.renderStyes()}
+        <h3>Сканнер участников вебинара</h3>`
+        if(!this.scanner.api.hasToken()){
+            html += this.renderNoTokenError()
+        }else
+        if(!this.scanner.api.isTokenValid()){
+            html += this.renderInvalidTokenError()
+        }
+        else{
+            html += this.renderInterface()
+        }
         return html
     }
     updateUI(){

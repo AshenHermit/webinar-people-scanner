@@ -63,14 +63,22 @@ class ScanResult extends Exportable{
 
 class RemoteApi{
     constructor(api_server){
-        this.api_server = api_server
+        this.apiServer = api_server
         this.token = null
+        this.tokenIsValid = true
     }
     async auth(token){
         return new Promise((resolve, reject)=>{
             this.token = token
             resolve(true)
         })
+    }
+
+    hasToken(){
+        return this.token
+    }
+    isTokenValid(){
+        return this.tokenIsValid
     }
 
     async processFetchCall(call){
@@ -108,7 +116,7 @@ class RemoteApi{
         return await this.processFetchCall(fetch(url, {method: 'POST', body: formData}))
     }
     createApiCallUrl(method, writeToken=true){
-        var url = this.api_server + method
+        var url = this.apiServer + method
         if(writeToken){
             if(url.indexOf("?")==-1)
                 url += "/?"
@@ -116,9 +124,15 @@ class RemoteApi{
         }
         return url
     }
+    updateTokenValidity(apiRequestResult){
+        if(apiRequestResult && apiRequestResult.msg=="Invalid token"){
+            this.tokenIsValid = false
+        }
+    }
     async makeGetApiCall(method){
         var url = this.createApiCallUrl(method)
         var result = await this.makeGetRequest(url)
+        this.updateTokenValidity(result)
         return result
     }
     async makePostApiCall(method, data, postData={}){
@@ -126,6 +140,7 @@ class RemoteApi{
         var result = await this.makePostRequest(
             url, data, 
             Object.assign(postData, {t: this.token}))
+        this.updateTokenValidity(result)
         return result
     }
 
