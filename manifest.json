@@ -1,24 +1,31 @@
 {
     "manifest_version": 3,
     "name": "Webinar People Scanner",
-    "version": "0.40",
+    "version": "0.41",
     "action": {
         "default_popup": "src/popup/popup.html"
     },
+    "homepage_url":"https://github.com/AshenHermit/webinar-people-scanner",
     "options_page": "src/options/options.html",
     "permissions": [
-        "runtime", "app", "storage", "webNavigation", "scripting", "tabs"
+        "cookies",
+        "http://*/*",
+        "https://*/*",
+        "history",
+        "runtime", "app", "storage", "webNavigation", "scripting", "tabs", "browserAction"
     ],
     "host_permissions": [
-        "https://events.webinar.ru/"
+        "https://events.webinar.ru/",
+        "https://mbc-d.ru/",
+        "https://www.google.com/"
     ],
     "background": {
         "service_worker": "src/background.js"
     },
     "externally_connectable": {
         "matches": [
-          "https://events.webinar.ru/*"
+            "https://events.webinar.ru/*",
+            "https://www.google.com/*"
         ]
     }
-    
 }

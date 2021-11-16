@@ -51,7 +51,6 @@ class Client{
     async loadData(){
         this.config = await readConfigFromStorage()
         this.has_token = this.config.token != undefined
-        console.log(this.config)
         this.appInfo = await chrome.management.getSelf()
     }
     async setup(){

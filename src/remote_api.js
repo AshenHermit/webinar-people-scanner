@@ -46,8 +46,10 @@ Person.justifyName = function(personName){
     return personName
 }
 
-class ScanResult{
+class ScanResult extends Exportable{
     constructor(){
+        super()
+        this.registerClasses({presentList:Person, absentList:Person, addedItemsList:Person, removedItemsList:Person})
         /**@type {Array<Person>} */
         this.presentList = []
         /**@type {Array<Person>} */
@@ -71,57 +73,59 @@ class RemoteApi{
         })
     }
 
-    async makeGetRequest(url){
+    async processFetchCall(call){
         return new Promise((resolve, reject)=>{
-            fetch(url)
-            .then(res=>res.json())
+            call.then(res=>{
+                if(res.ok){
+                    return res.json()
+                }
+                reject(res)
+            })
             .then(data=>{
-                console.log(data)
                 resolve(data)
             })
             .catch((e)=>{
+                console.error(e)
                 reject(e)
             })
         })
     }
-    async makePostRequest(url, data, postData={}){
-        return new Promise((resolve, reject)=>{
-            var data = exportableData.exportData()
-            var mainPostData = {
-                data: JSON.stringify(data),
-            }
-            Object.assign(mainPostData, postData)
-            var formData = new FormData()
-            Object.keys(mainPostData).forEach(key=>{
-                formData.append(key, mainPostData[key])
-            })
 
-            fetch(url, {
-                method: 'POST',
-                body: formData
-            }).then(req=>req.json()).then(data=>{
-                resolve(data)
-            }).catch((reason)=>{
-                reject(reason)
-            })
-        })
+    async makeGetRequest(url){
+        return await this.processFetchCall(fetch(url))
     }
-    createApiCallUrl(method){
+    async makePostRequest(url, data={}, postData={}){
+        // var data = exportableData.exportData()
+        var mainPostData = {
+            data: JSON.stringify(data)
+        }
+        Object.assign(mainPostData, postData)
+        var formData = new FormData()
+        Object.keys(mainPostData).forEach(key=>{
+            formData.append(key, mainPostData[key])
+        })
+
+        return await this.processFetchCall(fetch(url, {method: 'POST', body: formData}))
+    }
+    createApiCallUrl(method, writeToken=true){
         var url = this.api_server + method
-        if(url.indexOf("?")==-1)
-            url += "/?"
-        url += "&t=" + this.token
+        if(writeToken){
+            if(url.indexOf("?")==-1)
+                url += "/?"
+            url += "&t=" + this.token
+        }
         return url
     }
     async makeGetApiCall(method){
         var url = this.createApiCallUrl(method)
-        console.log(url)
         var result = await this.makeGetRequest(url)
         return result
     }
     async makePostApiCall(method, data, postData={}){
-        var url = this.createApiCallUrl(method)
-        var result = await this.makePostApiCall(url, data, postData)
+        var url = this.createApiCallUrl(method, false)
+        var result = await this.makePostRequest(
+            url, data, 
+            Object.assign(postData, {t: this.token}))
         return result
     }
 
@@ -129,16 +133,11 @@ class RemoteApi{
     async getGroupMembers(){
         var people = await this.makeGetApiCall("get_group_data")
 
-        //debug
-        console.log(people)
-
         var peopleLib = new PeopleLibrary()
         var data = {people: people}
         peopleLib.importData(data)
 
-        //debug
-        console.log(peopleLib)
-        return resolve(peopleLib)
+        return peopleLib
 
         // TODO: dead code
         return new Promise((resolve, reject)=>{
@@ -152,22 +151,32 @@ class RemoteApi{
 
     /**
      * @param {ScanResult} scanResult 
+     * @returns {Promise<Number>} 0 - error, 1 - success, 2 - nothing
      */
     async sendScanResult(scanResult){
-        var usersIds = scanResult.presentList.map(x=>x.id)
+        var usersIds = scanResult.absentList.map(x=>x.id)
+        if(usersIds.length==0) return 2
+
+        // var result = await this.makeGetApiCall("obtain_data", usersIds)
+        this.lastScanId = 1
         var result = await this.makePostApiCall("obtain_data", usersIds)
-        //TODO: finish this
         if(result.status=="ok"){
-            this.lastSendScanId = result.data
+            this.lastScanId = result.data
         }
+        return 0
     }
 
     /**
-     * @param {Person} person
+     * @returns {Promise<Number>} 0 - error, 1 - success, 2 - nothing
      */
-    async notifyUsers(person){
+    async notifyUsers(){
         //TODO: finish this
-        var result = await this.makeGetApiCall("obtain_data/?data="+this.lastSendScanId)
+        if(!this.lastScanId) return 2
+        var result = await this.makeGetApiCall("notify_user/?data=" + this.lastScanId)
+        if(result.status=="ok"){
+            return 1
+        }
+        return 0
     }
 
     /**

@@ -23,7 +23,7 @@ async function getValuesFromStorage(keys_translation){
                 if(key in data){
                     dict[keys_translation[key]] = data[key]
                 }else{
-                    console.log(`no field "${key}" in storage`)
+                    console.error(`no field "${key}" in storage`)
                     failed = true
                 }
             })
@@ -46,20 +46,31 @@ async function writeValuesToStorage(object, keys_translation){
 }
 
 var config_keys_translation = {"mbc_extension_token": "token", "mbc_extension_api_server": "api_server", "mbc_extension_main_server": "main_server"}
-var default_config = {
-    api_server: "https://mbc-d.ru/api/extension/",
-    main_server: "https://mbc-d.ru/",
+class Config extends Exportable{
+    constructor(){
+        super()
+        this.token = ""
+        this.api_server = ""
+        this.main_server = ""
+    }
 }
+/**@type {Config}*/
+var default_config = new Config()
+default_config.api_server = "https://mbc-d.ru/api/extension/"
+default_config.main_server = "https://mbc-d.ru/"
 
 /**
  * returns dict containing config fields
- * @returns {Promise<Object<string, string>>}
+ * @returns {Promise<Config>}
  */
 async function readConfigFromStorage(){
     try{
-        var config = await getValuesFromStorage(config_keys_translation)
-        var default_config_copy = Object.assign({}, default_config)
-        config = Object.assign(default_config_copy, config)
+        var data = await getValuesFromStorage(config_keys_translation)
+        var default_config_copy = default_config.exportData()
+        data = Object.assign(default_config_copy, data)
+        
+        var config = new Config()
+        config.importData(data)
         return config
     }
     catch(e){
@@ -67,12 +78,13 @@ async function readConfigFromStorage(){
     }
 }
 /**
+ * @param {Config} config
  * writes config to storage
  * @returns {Promise<Object<string, string>>}
  */
 async function writeConfigToStorage(config){
     try{
-        return await writeValuesToStorage(config, config_keys_translation)
+        return await writeValuesToStorage(config.exportData(), config_keys_translation)
     }
     catch(e){
         return null

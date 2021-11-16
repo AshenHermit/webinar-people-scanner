@@ -2,6 +2,7 @@ class OptionsScreen extends Client{
     constructor(){
         super()
         this.changesSaved = false
+        this.moreOptionsShown = false
         this.saveStatusTimeout = 0
     }
 
@@ -16,6 +17,11 @@ class OptionsScreen extends Client{
             this.changesSaved = false
             this.updateDOM()
         }, 1000)
+    }
+
+    showMoreOptions(){
+        this.moreOptionsShown = !this.moreOptionsShown
+        this.updateDOM()
     }
 
     updateDOM(){
@@ -35,12 +41,14 @@ class OptionsScreen extends Client{
             })
         }
         
-        if(this.changesSaved){
-            setStylesOfId("save_status", {maxHeight: '100px'})
-        }
-        else{
-            setStylesOfId("save_status", {maxHeight: '0px'})
-        }
+        setPropsOfId("show_more_options_button", {onclick: this.showMoreOptions.bind(this)})
+
+        setStylesOfId("more_options_folder", {
+            maxHeight: this.moreOptionsShown?'1000px':'0px'
+        })
+        setStylesOfId("save_status", {
+            maxHeight: this.changesSaved?'100px':'0px'
+        })
     }
 }
 

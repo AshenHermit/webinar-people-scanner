@@ -27,17 +27,22 @@
                         </div>
                     </div>
 
-                    <div class="section">
-                        <div class="title">Сервера</div>
-                        <div class="field-row">
-                            <div>api server</div>
-                            <div class="input"><input data-id="api_server_input"/></div>
-                        </div>
-                        <div class="field-row">
-                            <div>main server</div>
-                            <div class="input"><input data-id="main_server_input"/></div>
+                    <button data-id="show_more_options_button" class="secondary">расширенные настройки</button>
+
+                    <div class="folding" data-id="more_options_folder">
+                        <div class="section">
+                            <div class="title">Сервера</div>
+                            <div class="field-row">
+                                <div>api server</div>
+                                <div class="input"><input data-id="api_server_input"/></div>
+                            </div>
+                            <div class="field-row">
+                                <div>main server</div>
+                                <div class="input"><input data-id="main_server_input"/></div>
+                            </div>
                         </div>
                     </div>
+
 
                     <div class="no-height">
                         <div class="folding" data-id="save_status">
@@ -51,6 +56,7 @@
         </div>
     </div>
 
+    <script src="../exportable.js"></script>
     <script src="../storage.js"></script>
     <script src="../ui.js"></script>
     <script src="options.js"></script>

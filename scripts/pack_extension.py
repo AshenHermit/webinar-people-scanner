@@ -11,8 +11,9 @@ def pack_extension(chrome_executable, ext_folder_path, ext_key_filepath):
     subprocess.call(cmd)
 
 def main():
-    working_dir_name = os.path.dirname(__file__).split("\\")[-1]
-    working_dir_path = Path(os.path.realpath(os.path.dirname(__file__)))
+    current_folder = Path(os.path.dirname(__file__))
+    working_dir_path = (current_folder / "../").resolve()
+    working_dir_name = working_dir_path.name
     default_chrome_executable = PROGRAMFILES / "Google/Chrome/Application/chrome.exe"
 
     parser = argparse.ArgumentParser()
@@ -20,7 +21,7 @@ def main():
         default=str(default_chrome_executable), type=str)
     
     args = parser.parse_args()
-
+    
     pack_extension(
         args.chrome_executable, 
         str(working_dir_path), 

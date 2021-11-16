@@ -15,21 +15,38 @@ class BGRemoteApi extends RemoteApi{
         this.setupListeners()
     }
 
+    anyDataToJSON(data){
+        if(typeof data == "object"){
+            if("exportData" in data) data = data.exportData()
+        }
+        return JSON.stringify(data)
+    }
+
     setupListeners(){
         chrome.runtime.onMessageExternal.addListener(
             async (request, sender, sendResponse)=>{
-                console.log(request)
                 var result = {}
                 try{
+                    //TODO: reusing code ?
+                    if (request.action == "fetch"){
+                        var args = Object.values(request.kwargs)
+                        var data
+                        if(request.method=="GET") 
+                            data = await this.makeGetRequest(...args)
+                        if(request.method=="POST") 
+                            data = await this.makePostRequest(...args)
+                        result.data = data
+                    }else
                     if (request.action == "executeMethod"){
                         var args = JSON.parse(request.args)
                         var data = await this[request.method](...args)
-                        result.json = JSON.stringify(data.exportData())
+                        result.json = this.anyDataToJSON(data)
                     }
                 }catch(e){
+                    console.error(e)
                     result.error = e.toString()
                 }
-                sendResponse(JSON.stringify(result))
+                sendResponse(result)
                 return true
             }
         )
@@ -44,7 +61,6 @@ function setGlobalConfig(config, appId){
 async function executeScannerScripts(tabId){
     var appInfo = await chrome.management.getSelf();
     var config = await readConfigFromStorage();
-    console.log(config)
 
     var results = await chrome.scripting.executeScript({
         target: {tabId: tabId, allFrames: true},
@@ -65,6 +81,9 @@ function addTabHandler(){
         url: [
             {
                 urlMatches: 'https://events.webinar.ru/*',
+            },
+            {
+                urlMatches: 'https://www.google.com/*',
             },
         ],
     };

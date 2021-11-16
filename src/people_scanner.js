@@ -1,6 +1,7 @@
 var tabContentClassName = "StreamPeople__tabContent___ZQ7G6"
 var streamPeopleTabClassName = "StreamPeople__tab___EWMh4"
 
+/**@type {Config} */
 var globalConfig = window.people_scanner_api_config
 var globalAppId = window.people_scanner_app_id
 
@@ -8,45 +9,34 @@ class ClientRemoteApi extends RemoteApi{
     constructor(api_server, extension_id){
         super(api_server)
         this.extension_id = extension_id
-        console.log(this.extension_id)
     }
 
-    /**
-     * @param {String} method 
-     * @param {Array} args 
-     * @param {object} dataClass 
-     * @returns {Any}
-     */
-    async executeMethodRemotely(method, args, dataClass){
-        console.log(method, args, dataClass)
+    //TODO: reusing code, difenitely
+    
+    async makeBgFetchRequest(method="GET", kwargs){
         return new Promise((resolve, reject)=>{
             chrome.runtime.sendMessage(
-                this.extension_id, {action: "executeMethod", method: method, args: JSON.stringify(args)}, {},
+                this.extension_id, {action: "fetch", method: method, kwargs: kwargs}, {},
                 function(response) {
-                    response = JSON.parse(response)
-
-                    console.log(response)
-                    var resJson = response.json
-                    if(resJson){
-                        /**@type {Exportable} */
-                        var data = new dataClass()
-                        var rawData = JSON.parse(resJson)
-                        data.importData(rawData)
-                        resolve(data)
-                    }else{
+                    if(!response || response.error){
                         reject(response)
+                        return
                     }
+                    resolve(response.data)
+                    return
                 }
-            );
+            )
         })
     }
     
-    /** @returns {Promise<PeopleLibrary>} */
-    async getGroupMembers(){
-        return await this.executeMethodRemotely("getGroupMembers", [], PeopleLibrary)
+    async makeGetRequest(url){
+        return await this.makeBgFetchRequest("GET", {url:url})
+    }
+    
+    async makePostRequest(url, data, postData={}){
+        return await this.makeBgFetchRequest("POST", {url:url, data:data, postData:postData})
     }
 }
-
 
 class PeopleScanner{
     constructor(){
@@ -56,6 +46,8 @@ class PeopleScanner{
         this.groupMembers = []
         /**@type {ScanResult} */
         this.prevScanResult = new ScanResult()
+
+        this.dataChangeCallbacks = []
     }
 
     async setup(){
@@ -125,10 +117,21 @@ class PeopleScanner{
             .filter(x=>result.presentList.indexOf(x)==-1)
 
         
-        console.log(result)
         this.prevScanResult = result
 
+        this.api.sendScanResult(result).then(()=>{
+            this.callDataChangeCb()
+        })
+
         return result
+    }
+
+    callDataChangeCb(){
+        this.dataChangeCallbacks.forEach(x=>x())
+    }
+
+    async notifyUsers(){
+        this.api.notifyUsers()
     }
 }
 
@@ -140,11 +143,17 @@ class PeopleScannerControls{
         this.scanner = new PeopleScanner()
         /**@type {ScanResult} */
         this.scanResult = new ScanResult()
+
+        this.scanner.dataChangeCallbacks.push(this.updateUI.bind(this))
     }
 
     emptyOrText(text){
         if(text.trim().length==0) return '<div style="opacity: 0.5;">-пусто-</div>'
         else return text
+    }
+
+    renderButtonStyles(){
+        return `width:100%; border: 0; padding: 0.5em; margin-bottom: 5px;`
     }
 
     /**
@@ -153,34 +162,56 @@ class PeopleScannerControls{
      */
     generateVkIdsList(people){
         if(!people) return ""
+        people = people.filter(x=>x.vk_id)
+        if(people.length==0) return ""
         if(people.length==0) return ""
         return `<textarea rows=1 style="border:0; width:100%; opacity:0.7; font-size:0.6em; margin-bottom: 8px;">${
-            this.emptyOrText(people.map(x=>"@"+x.vk_shortname).join(", "))
+            people.map(x=>"@id"+x.vk_id).join(", ")
         }</textarea>`
     }
 
+    renderNotifyButton(){
+        if(this.scanner.api.lastScanId){
+            return `<button style="${this.renderButtonStyles()}" onclick='${this.instancePath}.notifyUsers();'>Уведомление</button>`
+        }else{
+            return ''
+        }
+    }
+
+    renderLists(){
+        if(this.scanner.api.lastScanId){
+            return `
+                <h3>Список присутствующих [${this.scanResult.presentList.length}]</h3>
+                ${this.generateVkIdsList(this.scanResult.presentList)}
+                <div>${this.emptyOrText(this.scanResult.presentList.map(x=>x.name).join("<br/>"))}</div>
+
+                <br/>
+                <h3>Список отсутствующих [${this.scanResult.absentList.length}]</h3>
+                ${this.generateVkIdsList(this.scanResult.absentList)}
+                <div>${this.emptyOrText(this.scanResult.absentList.map(x=>x.name).join("<br/>"))}</div>
+
+                <br/>
+                <br/>
+                <h3>Пришли [${this.scanResult.addedItemsList.length}]<br/><span style="opacity: 0.5; font-size: 0.8em;">(c момента последнего сканирования)</span></h3>
+                <div>${this.emptyOrText(this.scanResult.addedItemsList.map(x=>x.name).map(x=>"+ "+x).join("<br/>"))}</div>
+                <br/>
+                <h3>Ушли [${this.scanResult.removedItemsList.length}]</h3>
+                <div>${this.emptyOrText(this.scanResult.removedItemsList.map(x=>x.name).map(x=>"- "+x).join("<br/>"))}</div>
+            `
+        }else{
+            return ''
+        }
+    }
+
     renderHTML(){
+        //TODO:
+        // really bad rendering
+        // styling should be injected
         var html =  `<h3>Счетчик присутствующих / отсутствующих</h3>
-            <button style="border: 0; padding: 0.5em;" onclick='${this.instancePath}.scanPeople();'>Сканировать</button>
+            <button style="${this.renderButtonStyles()}" onclick='${this.instancePath}.scanPeople();'>Сканировать</button>
+            ${this.renderNotifyButton()}
             <br/><br/>
-
-            <h3>Список присутствующих [${this.scanResult.presentList.length}]</h3>
-            ${this.generateVkIdsList(this.scanResult.presentList)}
-            <div>${this.emptyOrText(this.scanResult.presentList.map(x=>x.name).join("<br/>"))}</div>
-
-            <br/>
-            <h3>Список отсутствующих [${this.scanResult.absentList.length}]</h3>
-            ${this.generateVkIdsList(this.scanResult.absentList)}
-            <div>${this.emptyOrText(this.scanResult.absentList.map(x=>x.name).join("<br/>"))}</div>
-
-            <br/>
-            <br/>
-            <h3>Пришли [${this.scanResult.addedItemsList.length}]<br/><span style="opacity: 0.5; font-size: 0.8em;">(c момента последнего сканирования)</span></h3>
-            <div>${this.emptyOrText(this.scanResult.addedItemsList.map(x=>x.name).map(x=>"+ "+x).join("<br/>"))}</div>
-            <br/>
-            <h3>Ушли [${this.scanResult.removedItemsList.length}]</h3>
-            <div>${this.emptyOrText(this.scanResult.removedItemsList.map(x=>x.name).map(x=>"- "+x).join("<br/>"))}</div>
-
+                ${this.renderLists()}
             <br/>
             `
         return html
@@ -188,13 +219,17 @@ class PeopleScannerControls{
     updateUI(){
         this.uiContainer.innerHTML = this.renderHTML()
     }
+    async notifyUsers(){
+        await this.scanner.notifyUsers()
+        this.notifyResult = this.updateUI()
+    }
     async scanPeople(){
         this.scanResult = await this.scanner.scanPeople()
         this.updateUI()
     }
     async start(){
         await this.scanner.setup()
-        await this.updateUI()
+        this.updateUI()
     }
 }
 
@@ -224,3 +259,6 @@ function setupUserInterface(){
         return false
     }
 }
+
+window.global_scanner = new PeopleScanner()
+window.global_scanner.setup()
